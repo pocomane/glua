@@ -1,0 +1,11 @@
+local root = arg[0]:match('^(.-[/\\])[^/\\]*$') or ''
+package.path = root .. '?.lua;' .. root .. '?/init.lua'
+package.cpath = root .. '?.dll;' .. root .. 'lib?.so'
+local p = print
+local r = io.read
+xpcall(function()
+  require 'default_launcher'
+end,function(x)
+end)
+p('press return to quit')
+r(1)
