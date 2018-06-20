@@ -115,6 +115,7 @@ int luamain_start(lua_State *L, char* script, int size, int argc, char **argv) {
   lua_setglobal(L, "arg");
 
   // Load the script in the stack
+  if (size < 0) size = strlen(script);
   status = luaL_loadbuffer(L, script, size, "embedded");
   if (!is_lua_ok(status)) {
     report_error(L, "An error occurred during the script load.");
