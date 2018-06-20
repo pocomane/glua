@@ -45,15 +45,17 @@ static int msghandler (lua_State *L) {
 }
 
 // Signal hook: stop the interpreter. Just like standard lua interpreter.
-static lua_State *globalL = NULL;
 static void clear_and_stop(lua_State *L, lua_Debug *ar) {
   (void)ar;  // unused arg.
   lua_sethook(L, NULL, 0, 0);
   luaL_error(L, "interrupted!");
 }
+static lua_State *globalL = NULL;
 static void sigint_handler (int i) {
   signal(i, SIG_DFL); // if another SIGINT happens, terminate process
-  lua_sethook(globalL, clear_and_stop, LUA_MASKCALL | LUA_MASKRET | LUA_MASKCOUNT, 1); // Run 'clear_and_stop' before any other lua code
+  lua_State *L = globalL;
+  globalL = NULL;
+  lua_sethook(L, clear_and_stop, LUA_MASKCALL | LUA_MASKRET | LUA_MASKCOUNT, 1); // Run 'clear_and_stop' before any other lua code
 }
 
 static void report_error(lua_State *L, const char * title){
@@ -71,7 +73,6 @@ int luamain_start(lua_State *L, char* script, int size, int argc, char **argv) {
   int status;
   int create_lua = 0;
   int base = 0;
-  struct sigaction sa;
  
   // create state as needed 
   if (L == NULL) {
@@ -81,8 +82,14 @@ int luamain_start(lua_State *L, char* script, int size, int argc, char **argv) {
   }
 
   // os signal handler
-  globalL = L;  // to be available to 'sigint_handler'
-  signal(SIGINT, sigint_handler);  // set C-signal handler
+  int handler_installed = 0;
+  struct sigaction sa;
+  sigaction(SIGINT, NULL, &sa);
+  if (sa.sa_handler == SIG_DFL) {
+    globalL = L;  // to be available to 'sigint_handler'
+    signal(SIGINT, sigint_handler);  // set C-signal handler
+    handler_installed = 1;
+  }
 
   luaL_openlibs(L);  // open standard libraries
 
@@ -129,7 +136,13 @@ int luamain_start(lua_State *L, char* script, int size, int argc, char **argv) {
   else status = FAIL_EXECUTION;
 
 luamain_end:
-  globalL = NULL;
+
+  // clear C-signal handler
+  if (handler_installed) {
+    if (sa.sa_handler == sigint_handler) signal(SIGINT, SIG_DFL);
+    globalL = NULL;
+  }
+
   if (base>0) lua_remove(L, base);  // remove lua message handler
   if (create_lua) lua_close(L);
   return status;
