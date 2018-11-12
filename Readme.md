@@ -6,9 +6,9 @@ This utility generates single binary file containing both the lua runtime and a
 script to run.  You can compile it upon the standard lua or luajit, as well as
 any C implementation of the lua API.
 
-Any file without an explicit license reference is in the Public Domain. The
-MIT-0 license can be alternatively applied. Please see the COPYING.txt file for
-more informations.
+This software is released under the [Unlicense](http://unlicense.org), so the
+legal statement in COPYING.txt applies, unless differently stated in individual
+files.
 
 Build
 ------
