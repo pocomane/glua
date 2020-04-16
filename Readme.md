@@ -32,20 +32,10 @@ glua.exe
 This app copies itself in target file, toghether with the script passed as
 argument. When you execute the output, it will just execute the embedded script
 
-The code that actually embed and extract the script is
-[binject](kttps://github.com/pocomane/binject), so refer to it for option and
-usage details. We just note that setting the define `BINJECT_ARRAY_SIZE` to
-`1`, you can force the script to be appended at end of the executable, so you
-can edit the executable directly. 
-
 The file `glued.exe` will be generate containing the script. When executed, the
 script will be run with all the command line arguments. The defaults lua
 globals will be avaiable, plus a `whereami` variable that contains the absolute
 path to the executable.
-
-If the compilation flag `USE_WHEREAMI` is enabled, the `whereami` will use some
-system dependent code to guess where the binary is. Otherwise it will use the
-first command line argument.
 
 If you want to embed lua VM code, use the default luac compiler and run glua
 on the its output. As described in the lua manual, the lua bytecode is
@@ -77,6 +67,32 @@ If you have a hello_world.lua file containing
 (or drag hello_world.lua on glua.exe). It will create hello_world.lua.exe
 that contain the script. Launch it and the message `hello world!` will be
 displayed in the console.
+
+Build options
+--------------
+
+If the compilation flag `USE_WHEREAMI` is enabled, the `whereami` will use some
+system dependent code to guess where the binary is. Otherwise it will use the
+first command line argument.
+
+The code that actually embed and extract the script is
+[binject](kttps://github.com/pocomane/binject), so refer to it for option and
+usage details. We just note that setting the define `BINJECT_ARRAY_SIZE` to
+`1`, you can force the script to be appended at end of the executable, so you
+can edit the executable directly.
+
+If you define `ENABLE_STANDARD_LUA_CLI` pointing the lua `lua.c`, it will be
+included in the `glua.exe`/`glued.exe` binaries. This enable to run the
+standard lua interpreter when `--lua` is passed as the LAST argument to
+`glua.exe` or `glued.exe`. Please note that the macro definition must begin and
+end `"`, e.g.  `gcc -DENABLE_STANDARD_LUA_CLI='"/path/tp/lua.c"' ...`
+
+Link extra modules
+-------------------
+
+To embed extra C modules in `glua.exe`, just call `luaL-openlibs`-like function fron `preload.c`.
+
+// TODO : multiple script from command line -> include wrapping in a require-able enclosure
 
 luancher
 ---------

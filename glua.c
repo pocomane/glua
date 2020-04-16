@@ -110,7 +110,7 @@ static int binject_main_app_internal_script_handle(binject_static_t * info, cons
   return NO_ERROR;
 }
 
-int main(int argc, char **argv) {
+int glua_main(int argc, char **argv) {
   int result = GENERIC_ERROR;
 
   // Get information from static section
@@ -136,5 +136,21 @@ int main(int argc, char **argv) {
 
 end:
   return result;
+}
+
+#ifdef ENABLE_STANDARD_LUA_CLI
+#define main lua_main
+#include ENABLE_STANDARD_LUA_CLI
+#undef main
+#endif
+int main(int argc, char **argv) {
+#ifdef ENABLE_STANDARD_LUA_CLI
+  if (argc > 1 && !strcmp(argv[argc-1],"--lua")){
+    argc -= 1;
+    argv[argc] = 0x0;
+    return lua_main(argc, argv);
+  }
+#endif
+  return glua_main(argc, argv);
 }
 
