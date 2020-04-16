@@ -39,39 +39,8 @@ static char * aux_script_prepare(char * buf, int * off, int * siz){
   return buf;
 }
 
-#include "whereami.h"
-
 static int aux_script_run(char * scr, int size, int argc, char ** argv){
-  lua_State * L = luaL_newstate();
-
-  char * exe_path = argv[0];
-  int length;
-  length = wai_getExecutablePath(NULL, 0, NULL);
-  char buf[length+1];
-  buf[0] = '\0';
-  if (length > 0) {
-    exe_path = buf;
-    int dirpathlen;
-    wai_getExecutablePath(exe_path, length, &dirpathlen);
-    exe_path[length] = '\0';
-    lua_pushstring(L, exe_path);
-    lua_setglobal(L, "whereami");
-  }
-  length = strlen(exe_path);
-
-  char init_path[length+16];
-  strncpy(init_path, exe_path, length+16);
-  int i;
-  for (i = length; i > 0; i--){
-    if (init_path[i] != '/' && init_path[i] != '\\') {
-      init_path[i] = '\0';
-    } else {
-      break;
-    }
-  }
-  strncpy(init_path+i+1, "init", 16);
-
-  return luamain_start(L, scr, size, argc, argv);
+  return luamain_start(luaL_newstate(), scr, size, argc, argv);
 }
 
 // --------------------------------------------------------------------

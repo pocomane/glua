@@ -16,7 +16,7 @@ Build
 There is no actual build system. You can compile it with gcc using:
 
 ```
-gcc -std=c99 -I . -o glua.exe *.c lua_lib -lm -ldl
+gcc -I . -o glua.exe *.c lua_lib -lm -ldl
 ```
 
 This assumes that you have copied the lua headers in the current directoy and
@@ -35,7 +35,7 @@ argument. When you execute the output, it will just execute the embedded script
 The code that actually embed and extract the script is
 [binject](kttps://github.com/pocomane/binject), so refer to it for option and
 usage details. We just note that setting the define `BINJECT_ARRAY_SIZE` to
-zero, you can force the script to be appended at end of the executable, so you
+`1`, you can force the script to be appended at end of the executable, so you
 can edit the executable directly. 
 
 The file `glued.exe` will be generate containing the script. When executed, the

@@ -5,6 +5,8 @@
 #include "lua.h"
 #include "lauxlib.h"
 
+#include "preload.h"
+
 #define FAIL_INIT -125
 #define FAIL_ALLOC -126
 #define FAIL_EXECUTION -127
@@ -92,6 +94,7 @@ int luamain_start(lua_State *L, char* script, int size, int argc, char **argv) {
   }
 
   luaL_openlibs(L);  // open standard libraries
+  preload_all(L);    // open extra libraries
 
   // Prepare the stack with the error handler
   lua_pushcfunction(L, msghandler);
