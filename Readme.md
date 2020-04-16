@@ -16,7 +16,7 @@ Build
 There is no actual build system. You can compile it with gcc using:
 
 ```
-gcc -I . -o glua.exe *.c lua_lib -lm -ldl
+gcc -DBINJECT_ARRAY_SIZE=1 -DUSE_WHEREAMI -I . -o glua.exe *.c lua_lib -lm -ldl
 ```
 
 This assumes that you have copied the lua headers in the current directoy and
@@ -42,6 +42,10 @@ The file `glued.exe` will be generate containing the script. When executed, the
 script will be run with all the command line arguments. The defaults lua
 globals will be avaiable, plus a `whereami` variable that contains the absolute
 path to the executable.
+
+If the compilation flag `USE_WHEREAMI` is enabled, the `whereami` will use some
+system dependent code to guess where the binary is. Otherwise it will use the
+first command line argument.
 
 If you want to embed lua VM code, use the default luac compiler and run glua
 on the its output. As described in the lua manual, the lua bytecode is

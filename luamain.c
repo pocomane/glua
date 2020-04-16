@@ -24,6 +24,8 @@
   #define lua_is_bad() (is_lua_ok(0) ? 1 : 0)
 #endif
 
+const char* arg0 = 0;
+
 static int msghandler (lua_State *L) {
 
   // is error object not a string?
@@ -75,6 +77,8 @@ int luamain_start(lua_State *L, char* script, int size, int argc, char **argv) {
   int status;
   int create_lua = 0;
   int base = 0;
+
+  arg0 = argv[0];
  
   // create state as needed 
   if (L == NULL) {
