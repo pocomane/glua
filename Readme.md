@@ -20,9 +20,9 @@ gcc -DBINJECT_ARRAY_SIZE=1 -DUSE_WHEREAMI -I . -o glua.exe *.c lua_lib -lm -ldl
 ```
 
 This assumes that you have copied the lua headers in the current directoy and
-the binary library (static or shared) in the lua_lib file. For windows you can
-add -D_WIN32_WINNT=0x0600, and -mconsole or -mwindows (depending on if you want
-or not a console to appear at start of the application).
+the binary library (static or shared) in the `lua_lib file`. For windows you can
+add `-D_WIN32_WINNT=0x0600`, and `-mconsole` or `-mwindows` (depending on if
+you want or not a console to appear at start of the application).
 
 // TODO : document gcc linker ORIGIN
 
@@ -54,17 +54,14 @@ There are other tools that archive somehow the same result of glua:
     script at end of the exe, and at run-time open the exe searching for the
     script.
 
-Example
---------
-
-If you have a hello_world.lua file containing
-`print "hello world!"`, you can:
+As example:
 
 ```
+echo "print'hello world!" > hello_world.lua
 ./glua.exe hello_world.lua
 ```
 
-(or drag hello_world.lua on glua.exe). It will create hello_world.lua.exe
+(or drag `hello_world.lua` on `glua.exe`). It will create `glued.exe`
 that contain the script. Launch it and the message `hello world!` will be
 displayed in the console.
 
@@ -75,24 +72,23 @@ If the compilation flag `USE_WHEREAMI` is enabled, the `whereami` will use some
 system dependent code to guess where the binary is. Otherwise it will use the
 first command line argument.
 
-The code that actually embed and extract the script is
-[binject](kttps://github.com/pocomane/binject), so refer to it for option and
-usage details. We just note that setting the define `BINJECT_ARRAY_SIZE` to
-`1`, you can force the script to be appended at end of the executable, so you
-can edit the executable directly.
-
 If you define `ENABLE_STANDARD_LUA_CLI` pointing the lua `lua.c`, it will be
 included in the `glua.exe`/`glued.exe` binaries. This enable to run the
 standard lua interpreter when `--lua` is passed as the LAST argument to
 `glua.exe` or `glued.exe`. Please note that the macro definition must begin and
 end `"`, e.g.  `gcc -DENABLE_STANDARD_LUA_CLI='"/path/tp/lua.c"' ...`
 
+The code that actually embed and extract the script is [binject](#Binject), so
+refer to its [documentation](#Binject working) for additional options.
+
 Link extra modules
 -------------------
 
-To embed extra C modules in `glua.exe`, just call `luaL-openlibs`-like function fron `preload.c`.
+To embed extra C modules in `glua.exe`, just call `luaL-openlibs`-like function
+fron `preload.c`.
 
-// TODO : multiple script from command line -> include wrapping in a require-able enclosure
+// TODO : multiple script from command line -> include wrapping in a
+require-able enclosure
 
 luancher
 ---------
@@ -119,4 +115,68 @@ example_launcher
 
 A more complex lua script launcher is in the `example_laucher.lua`. Open it for
 some documentation.
+
+
+Binject
+--------
+
+The code that actually embed the script in the executable is in the
+`binject.c/h` files. It is designed as a "Library" so you can use them alone
+without lua or anything else. You just need to provide the parsing function or
+manipulate the data before the injection.
+
+A complete but simple "Echo" example is provided for reference. It can be
+compiled with
+
+```
+gcc -std=c99 -o binject.exe binject.c binject_example.cc
+```
+
+As it is, this will compile the "Echo" example. For some customization, read
+the 'How it works' section.
+
+When called without argument, some help information will be printed. To embed a
+script pass it as argument.
+
+```
+./binject.exe my_script
+```
+
+This will generate the file injed.exe. Then:
+
+```
+echo "hello world" > my_text.txt
+./binject.exe my_text.txt
+rm my_text.txt
+./injed.exe
+```
+
+will print "hello world" to the screen.
+
+In the test directory there is a test that will execute all the commands seen
+before. At end it will also check that the output of the example app is the
+expected one.
+
+Binject working
+----------------
+
+Two methods are avaiable to embed the script. By default, the "Array" method
+will be tryed first, and if the script is too big, it will fallback to the
+"Tail" method.
+
+In the "Array" method the script will overwrite the initialization data of a
+static struct.
+
+In the "Tail" method the script will be appended at end of the
+executable, and in the static struct will be kept only the informations
+about where the script begin. With this method you can edit you script
+directly in the exectuable.
+
+The example application can be configured at compile time by means of the
+following definitions.
+
+`BINJECT_ARRAY_SIZE` - Size of the data for the INTERNAL ARRAY
+mechanism. It should be a positive integer. If you put this value to 0,
+you can actually force to always use the tail method. The default is
+9216 byte.
 
