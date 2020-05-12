@@ -139,10 +139,13 @@ end:
 }
 
 #ifdef ENABLE_STANDARD_LUA_CLI
+#define luaL_openlibs(L) {luaL_openlibs(L);preload_all(L);}
 #define main lua_main
 #include ENABLE_STANDARD_LUA_CLI
 #undef main
+#undef luaL_openlibs(...)
 #endif
+
 int main(int argc, char **argv) {
 #ifdef ENABLE_STANDARD_LUA_CLI
   if (argc > 1 && !strcmp(argv[argc-1],"--lua")){
