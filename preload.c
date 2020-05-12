@@ -1,11 +1,26 @@
 
 #include "lua.h"
+#include "lauxlib.h"
 
 #include "preload.h"
+
+void luaL_openlibs(lua_State *L);
+int luaopen_whereami(lua_State* L);
+
+int preload_all(lua_State* L){
+  luaL_openlibs(L);
+  luaL_getsubtable(L, LUA_REGISTRYINDEX, LUA_PRELOAD_TABLE);
+
+  lua_pushcfunction(L, luaopen_whereami); lua_setfield(L, -2, "whereami");
+
+  lua_pop(L, 1);
+  return 0;
+}
+
+// TODO : move to a proper lua module ?
 #include "luamain.h"
 #include "whereami.h"
-
-int preload_whereami(lua_State* L){
+static int luafunc_whereami(lua_State* L){
 #ifdef USE_WHEREAMI
   char * exe_path = "";
   int length;
@@ -18,17 +33,16 @@ int preload_whereami(lua_State* L){
     wai_getExecutablePath(exe_path, length, &dirpathlen);
     exe_path[length] = '\0';
     lua_pushstring(L, exe_path);
-    lua_setglobal(L, "whereami");
+    return 1;
   }
   return 0;
 #else // USE_WHEREAMI
   lua_pushstring(L, arg0);
-  lua_setglobal(L, "whereami");
+  return 1;
 #endif // USE_WHEREAMI
 }
-
-int preload_all(lua_State* L){
-  preload_whereami(L);
-  return 0;
+int luaopen_whereami(lua_State* L){
+  lua_pushcfunction(L, luafunc_whereami);
+  return 1;
 }
 

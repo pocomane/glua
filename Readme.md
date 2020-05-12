@@ -33,9 +33,9 @@ This app copies itself in target file, toghether with the script passed as
 argument. When you execute the output, it will just execute the embedded script
 
 The file `glued.exe` will be generate containing the script. When executed, the
-script will be run with all the command line arguments. The defaults lua
-globals will be avaiable, plus a `whereami` variable that contains the absolute
-path to the executable.
+script will be run with all the command line arguments.  The defaults lua
+globals will be avaiable.  Moreover the libraries defined in
+[preload.c](preload.c) are embedded.
 
 If you want to embed lua VM code, use the default luac compiler and run glua
 on the its output. As described in the lua manual, the lua bytecode is
@@ -68,9 +68,9 @@ displayed in the console.
 Build options
 --------------
 
-If the compilation flag `USE_WHEREAMI` is enabled, the `whereami` will use some
-system dependent code to guess where the binary is. Otherwise it will use the
-first command line argument.
+If the compilation flag `USE_WHEREAMI` is enabled, the embedded `whereami`
+library will use some system dependent code to guess where the binary is.
+Otherwise it will use the first command line argument.
 
 If you define `ENABLE_STANDARD_LUA_CLI` pointing the lua `lua.c`, it will be
 included in the `glua.exe`/`glued.exe` binaries. This enable to run the
@@ -101,8 +101,8 @@ The command
 
 will generate int `glued.exe` a minimal lua script launcher. It simply load the
 `init` file in its same directory, and run it as a lua script/bytecode. The
-script will have access to the common lua globals, plus the `whereami` variable
-previously described.
+script will have access to the common lua globals. Moreover the libraries
+defined in [preload.c](preload.c) are embedded.
 
 This tool is usefull while developing, when you are ready to deploy, you can
 embed your script directly in a executable by means of `glua.exe`. In this
@@ -116,6 +116,15 @@ example_launcher
 A more complex lua script launcher is in the `example_laucher.lua`. Open it for
 some documentation.
 
+preload.c
+----------
+
+The `preload.c` defines what lua libraries are embedded into the executables. To
+add new C-modules, you just need to call their standard `loaopen_` function from
+the `preaload_all` one.
+
+By default just the `whereami` library is loaded, it can be called with
+`local path = require'whereami'()`.
 
 Binject
 --------

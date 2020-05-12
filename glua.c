@@ -139,7 +139,7 @@ end:
 }
 
 #ifdef ENABLE_STANDARD_LUA_CLI
-#define luaL_openlibs(L) {luaL_openlibs(L);preload_all(L);}
+#define luaL_openlibs(L) preload_all(L)
 #define main lua_main
 #include ENABLE_STANDARD_LUA_CLI
 #undef main
