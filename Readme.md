@@ -123,6 +123,9 @@ The `preload.c` defines what lua libraries are embedded into the executables. To
 add new C-modules, you just need to call their standard `loaopen_` function from
 the `preaload_all` one.
 
+Note: pure lua modules can be preloaded in the same way, wrapping them in a C
+`luaopen_` function that just do a `luaL_loadbuffer` plus a `lua_call`.
+
 By default just the `whereami` library is loaded, it can be called with
 `local path = require'whereami'()`.
 
