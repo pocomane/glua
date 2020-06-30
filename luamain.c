@@ -24,6 +24,8 @@
   #define lua_is_bad() (is_lua_ok(0) ? 1 : 0)
 #endif
 
+void luaL_openlibs (lua_State *L); // Lua internal - not part of the lua API
+
 const char* arg0 = 0;
 
 static int msghandler (lua_State *L) {

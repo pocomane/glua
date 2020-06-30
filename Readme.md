@@ -6,6 +6,8 @@ This utility generates single binary file containing both the lua runtime and a
 script to run.  You can compile it upon the standard lua or luajit, as well as
 any C implementation of the lua API.
 
+It is tested with lua 5.4.0, but older version should work too.
+
 Built packages for linux, windows and mac can be found in [lua static
 battery](http://github.com/pocomane/lua_static_battery).
 
