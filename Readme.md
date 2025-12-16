@@ -108,7 +108,7 @@ Build
 There is no actual build system. You can compile it with gcc using:
 
 ```
-gcc -DBINJECT_ARRAY_SIZE=1 -DUSE_WHEREAMI -I . -o glua.exe *.c lua_lib -lm -ldl
+gcc -Wno-implicit-function-declaration -DBINJECT_ARRAY_SIZE=1 -DUSE_WHEREAMI -I . -o glua.exe *.c lua_lib -lm -ldl
 ```
 
 This assumes that you have copied the lua headers in the current directoy and

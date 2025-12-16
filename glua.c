@@ -143,8 +143,6 @@ int run_main(int argc, char** argv){
 }
 
 #ifdef ENABLE_STANDARD_LUA_CLI
-typedef struct lua_State lua_State;
-int preload_all(lua_State* L);
 #define luaL_openlibs(L) preload_all(L)
 #define main lua_main
 #include ENABLE_STANDARD_LUA_CLI
