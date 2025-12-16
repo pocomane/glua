@@ -14,6 +14,8 @@
 #define BINJECT_ARRAY_SIZE (9216)
 #endif // BINJECT_ARRAY_SIZE
 
+#define ERROR_EXIT 13
+
 static int error_report(int internal_error) {
   int e = errno;
   if (NO_ERROR != internal_error)
@@ -24,15 +26,6 @@ static int error_report(int internal_error) {
 }
 
 BINJECT_STATIC_STRING("```replace_data```", BINJECT_ARRAY_SIZE, static_data);
-
-static int aux_print_help(const char * command){
-  printf("\nUsage:\n  %s script.lua\n\n", command);
-  printf("glued.exe executable will be generated or overwritten.\n");
-  printf("glued.exe will execute an embedded copy of script.lua.\n\n");
-  printf("NOTE: depending on the chosen embedding mechanism, some help information will be\n");
-  printf("appended at end of glued.exe.\n");
-  return 0;
-}
 
 static char * aux_script_prepare(char * buf, int * off, int * siz){
   *off = *siz; // buffer processing finished
@@ -110,32 +103,43 @@ static int binject_main_app_internal_script_handle(binject_static_t * info, cons
   return NO_ERROR;
 }
 
-int glua_main(int argc, char **argv) {
-  int result = GENERIC_ERROR;
+int merge_main(int argc, char** argv){
+  if (argc < 2 || argv[1][0] == '\0') {
+    // No arguments: print help
+    fprintf(stderr, "Error: please provide a valid file name to merge as argument\n");
+    return ERROR_EXIT;
+  } else {
+    // TODO : use whereami instead of argv[0]
+    // TODO : use an output name based on the input one
+    return binject_main_app_internal_script_inject(static_data, argv[1], argv[0], "glued.exe");
+  }
+}
+
+int run_or_merge_main(int argc, char **argv) {
 
   // Get information from static section
   unsigned int size = 0;
   unsigned int offset = 0;
   binject_info(static_data, &size, &offset);
 
-  // Run the proper tool
   if (size > 0 || offset > 0) {
     // Script found: handle it
-    result = binject_main_app_internal_script_handle(static_data, argv[0], argc, argv);
-
-  } else if (argc < 2 || argv[1][0] == '\0') {
-    // No arguments: print help
-    aux_print_help(argv[0]);
-    result = NO_ERROR;
-
+    // TODO : use whereami instead of argv[0]
+    return binject_main_app_internal_script_handle(static_data, argv[0], argc, argv);
   } else {
     // No script found: inject
-    if (argc < 2) { aux_print_help(argv[0]); goto end; }
-    result = binject_main_app_internal_script_inject(static_data, argv[1], argv[0], "glued.exe");
+    return merge_main(argc, argv);
   }
+  return GENERIC_ERROR;
+}
 
-end:
-  return result;
+int clear_main(int argc, char** argv){
+  fprintf(stderr, "Clear tool not implemented yet\n");
+  return ERROR_EXIT; // TODO : implement ! this should generate a new exe with no embeded script
+}
+
+int run_main(int argc, char** argv){
+  return binject_main_app_internal_script_handle(static_data, argv[0], argc, argv);
 }
 
 #ifdef ENABLE_STANDARD_LUA_CLI
@@ -147,13 +151,51 @@ end:
 #endif
 
 int main(int argc, char **argv) {
+  int shift_argument = 0;
+  enum {MERGE, RUN_OR_MERGE, CLEAR, INTERNAL, LUA_INTERPRETER} tool_to_run;
+
+  // Multimain: select the right tool
+  tool_to_run = RUN_OR_MERGE;
+  if (argc > 1){
+    if (0){
+    } else if (!strcmp(argv[argc-1],"--")){
+      shift_argument = 1;
+    } else if (!strcmp(argv[argc-1],"--merge")){
+      shift_argument = 1;
+      tool_to_run = MERGE;
+    } else if (!strcmp(argv[argc-1],"--merge-or-run")){
+      shift_argument = 1;
+      tool_to_run = MERGE;
+    } else if (!strcmp(argv[argc-1],"--clear")){
+      shift_argument = 1;
+      tool_to_run = CLEAR;
+    } else if (!strcmp(argv[argc-1],"--run")){
+      shift_argument = 1;
+      tool_to_run = INTERNAL;
 #ifdef ENABLE_STANDARD_LUA_CLI
-  if (argc > 1 && !strcmp(argv[argc-1],"--lua")){
+    } else if (!strcmp(argv[argc-1],"--lua")){
+      shift_argument = 1;
+      tool_to_run = LUA_INTERPRETER;
+#endif
+    }
+  }
+
+  // Multimain: shift arguments if needed
+  if (shift_argument){
     argc -= 1;
     argv[argc] = 0x0;
-    return lua_main(argc, argv);
   }
+
+  int exit_code = ERROR_EXIT;
+  switch (tool_to_run){
+    break; case MERGE:           exit_code = merge_main(argc, argv);
+    break; case RUN_OR_MERGE:    exit_code = run_or_merge_main(argc, argv);
+    break; case CLEAR:           exit_code = clear_main(argc, argv);
+    break; case INTERNAL:        exit_code = run_main(argc, argv);
+#ifdef ENABLE_STANDARD_LUA_CLI
+    break; case LUA_INTERPRETER: exit_code = lua_main(argc, argv);
 #endif
-  return glua_main(argc, argv);
+  }
+  return exit_code;
 }
 

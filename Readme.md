@@ -15,6 +15,93 @@ This software is released under the [Unlicense](http://unlicense.org), so the
 legal statement in COPYING.txt applies, unless differently stated in individual
 files.
 
+Usage
+------
+
+This application let you to embed a lua script in a standalone executable.
+
+As example:
+
+```
+echo "print'hello world!" > hello_world.lua
+./glua.exe hello_world.lua
+```
+(or drag `hello_world.lua` on `glua.exe`). It will create `glued.exe`
+that contain the script. Launch it and the message `hello world!` will be
+displayed in the console.
+
+Please, be aware that glua.exe is (deliberately) an extremly simple tool. It
+does not try to reduce size, or to embed other lua modules. For such advanced
+operation you can use something like [lua squish](http://matthewwild.co.uk/projects/squish/home) and then use glua.exe
+on the resulting file.
+
+There are other tools that archive somehow the same result of glua:
+- [bin2c](https://sourceforge.net/p/wxlua/svn/217/tree/trunk/wxLua/util/bin2c/bin2c.lua)
+    converts the lua bytestream in lua C API call ready to be compiled.
+- [srlua](http://webserver2.tecgraf.puc-rio.br/~lhf/ftp/lua/#srlua) paste the
+    script at end of the exe, and at run-time open the exe searching for the
+    script.
+
+This is application behaves differently according to the last argument passed.
+If the last argumnent is not one of the following it acts like it was passed
+`--run-or-marge` one.  It follows a description of all the commands avaiable.
+
+```
+./glua.exe script.lua --merge
+```
+
+This command copies `glua.exe` the target `glued.exe` file, injecting the
+script passed as argument. If there was already another script embeded, than
+the new one will be appended.
+
+```
+./glua.exe [arg1] ... [argN] --run
+```
+
+This command executes the lua script embedded in the executable. Initially
+there is no script so this command does nothing. If you used the `--merge`
+command previously, and use the `--run` command on the output, the injected
+script will be run.
+
+When executed, the last argument is removed, then script will be run with all
+the other command line arguments.  The defaults lua globals will be avaiable.
+Moreover the libraries defined in [preload.c](preload.c) are embedded.
+
+If you want to embed lua VM code, use the default luac compiler and run glua
+on the its output. As described in the lua manual, the lua bytecode is
+compatible across machine with the same word size and byte order.
+
+```
+./glua.exe [arg1] ... [argN] --merge-or-run
+```
+
+If a script is embeded this is exactly like `--run`, otherwise it run the
+`--merge` command. Note that this is the default command in case no specific one
+is selected as last argument. In such case, if there is a script, the last argument
+is not removed, preserving '[argN]' for the emebed script.
+
+```
+./glua.exe [arg1] ... [argN] --lua
+```
+
+This command fallback to the stanard `lua` command line operation. For example
+running it without any other arguments, launche the interactive interpreter.
+However, all the extra globals shown in the `--run` command are avaiable also in
+this mode.
+
+```
+./glua.exe [arg1] ... [argN] --clear
+```
+
+... work in progress (implement and write documentation) ...
+
+Launch options
+---------------
+
+... work in progress ...
+
+TODO : document the command line options
+
 Build
 ------
 
@@ -30,45 +117,6 @@ add `-D_WIN32_WINNT=0x0600`, and `-mconsole` or `-mwindows` (depending on if
 you want or not a console to appear at start of the application).
 
 // TODO : document gcc linker ORIGIN
-
-glua.exe
----------
-
-This app copies itself in target file, toghether with the script passed as
-argument. When you execute the output, it will just execute the embedded script
-
-The file `glued.exe` will be generate containing the script. When executed, the
-script will be run with all the command line arguments.  The defaults lua
-globals will be avaiable.  Moreover the libraries defined in
-[preload.c](preload.c) are embedded.
-
-If you want to embed lua VM code, use the default luac compiler and run glua
-on the its output. As described in the lua manual, the lua bytecode is
-compatible across machine with the same word size and byte order.
-
-Please, be aware that glua.exe is (deliberately) an extremly simple tool. It
-does not try to reduce size, or to embed other lua modules. For such advanced
-operation you can use something like [lua
-squish](http://matthewwild.co.uk/projects/squish/home) and then use glua.exe
-on the resulting file.
-
-There are other tools that archive somehow the same result of glua:
-- [bin2c](https://sourceforge.net/p/wxlua/svn/217/tree/trunk/wxLua/util/bin2c/bin2c.lua)
-    converts the lua bytestream in lua C API call ready to be compiled.
-- [srlua](http://webserver2.tecgraf.puc-rio.br/~lhf/ftp/lua/#srlua) paste the
-    script at end of the exe, and at run-time open the exe searching for the
-    script.
-
-As example:
-
-```
-echo "print'hello world!" > hello_world.lua
-./glua.exe hello_world.lua
-```
-
-(or drag `hello_world.lua` on `glua.exe`). It will create `glued.exe`
-that contain the script. Launch it and the message `hello world!` will be
-displayed in the console.
 
 Build options
 --------------
@@ -150,7 +198,7 @@ gcc -std=c99 -o binject.exe binject.c binject_example.cc
 ```
 
 As it is, this will compile the "Echo" example. For some customization, read
-the 'How it works' section.
+the 'Binject working' section.
 
 When called without argument, some help information will be printed. To embed a
 script pass it as argument.
@@ -189,8 +237,8 @@ executable, and in the static struct will be kept only the informations
 about where the script begin. With this method you can edit you script
 directly in the exectuable.
 
-The example application can be configured at compile time by means of the
-following definitions.
+The applications using `binject` can be configured at compile time by means of
+the following definitions.
 
 `BINJECT_ARRAY_SIZE` - Size of the data for the INTERNAL ARRAY
 mechanism. It should be a positive integer. If you put this value to 0,
