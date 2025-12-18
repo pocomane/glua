@@ -2,9 +2,10 @@
 Glua
 =====
 
-This utility generates single binary file containing both the lua runtime and a
-script to run.  You can compile it upon the standard lua or luajit, as well as
-any C implementation of the lua API.
+This utility generates single binary file containing both the lua runtime with
+some utility functions, and optionally a script to run. You can compile it
+upon the standard lua or luajit, as well as any C implementation of the lua
+API.
 
 It is tested with lua 5.4.0, but older version should work too.
 
@@ -18,17 +19,44 @@ files.
 Usage
 ------
 
-This application let you to embed a lua script in a standalone executable.
+If no script is embed in the binary, it behaves like a standard lua command
+line application, with some library added. If a script is embeded, it is run
+instead of the standard lua command line application. By default it has
+no script embeded.
 
-As example:
+The embeded funcitons can be accessed with `require "whereami"`, that is a
+function that returns the path to the executable, and `require "glua_pack"`.
+The latter is a function that takes two arguments: a script to embed an a path. It
+copies whole application in the path and embeds the script in it.
+
+So, for example, you can generate an executable that embeds the `test.lua` script in it,
+and execute it when launched, with the following one liner:
 
 ```
 echo "print'hello world!" > hello_world.lua
-./glua.exe hello_world.lua
+
+./glua.exe -e 'require"glua_pack"("test.lua", "glued.exe")'
+
+chmod ugo+x glued.exe
+./glued.exe
 ```
-(or drag `hello_world.lua` on `glua.exe`). It will create `glued.exe`
-that contain the script. Launch it and the message `hello world!` will be
-displayed in the console.
+
+The newly created `glued.exe` contains the script. Launching it will diplay the
+message `hello world!` in the console.  You can simplify its command line with:
+
+```
+echo "require"glua_pack"(argv[1], "glued.exe")" > test.lua
+./glua.exe -e 'require"glua_pack"("test.lua", "gluasimple.exe")'
+chmod ugo+x gluasmple.exe
+```
+
+This `gluasimple.exe` can generate new executables simply with:
+
+```
+./glua2.exe test.lua
+```
+
+(or drag `hello_world.lua` on `glua2.exe`).
 
 Please, be aware that glua.exe is (deliberately) an extremly simple tool. It
 does not try to reduce size, or to embed other lua modules. For such advanced
@@ -41,66 +69,6 @@ There are other tools that archive somehow the same result of glua:
 - [srlua](http://webserver2.tecgraf.puc-rio.br/~lhf/ftp/lua/#srlua) paste the
     script at end of the exe, and at run-time open the exe searching for the
     script.
-
-This is application behaves differently according to the last argument passed.
-If the last argumnent is not one of the following it acts like it was passed
-`--run-or-marge` one.  It follows a description of all the commands avaiable.
-
-```
-./glua.exe script.lua --merge
-```
-
-This command copies `glua.exe` the target `glued.exe` file, injecting the
-script passed as argument. If there was already another script embeded, than
-the new one will be appended.
-
-```
-./glua.exe [arg1] ... [argN] --run
-```
-
-This command executes the lua script embedded in the executable. Initially
-there is no script so this command does nothing. If you used the `--merge`
-command previously, and use the `--run` command on the output, the injected
-script will be run.
-
-When executed, the last argument is removed, then script will be run with all
-the other command line arguments.  The defaults lua globals will be avaiable.
-Moreover the libraries defined in [preload.c](preload.c) are embedded.
-
-If you want to embed lua VM code, use the default luac compiler and run glua
-on the its output. As described in the lua manual, the lua bytecode is
-compatible across machine with the same word size and byte order.
-
-```
-./glua.exe [arg1] ... [argN] --merge-or-run
-```
-
-If a script is embeded this is exactly like `--run`, otherwise it run the
-`--merge` command. Note that this is the default command in case no specific one
-is selected as last argument. In such case, if there is a script, the last argument
-is not removed, preserving '[argN]' for the emebed script.
-
-```
-./glua.exe [arg1] ... [argN] --lua
-```
-
-This command fallback to the stanard `lua` command line operation. For example
-running it without any other arguments, launche the interactive interpreter.
-However, all the extra globals shown in the `--run` command are avaiable also in
-this mode.
-
-```
-./glua.exe [arg1] ... [argN] --clear
-```
-
-... work in progress (implement and write documentation) ...
-
-Launch options
----------------
-
-... work in progress ...
-
-TODO : document the command line options
 
 Build
 ------

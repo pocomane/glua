@@ -33,23 +33,19 @@ typedef struct binject_static_s binject_static_t;
 #define BINJECT_STATIC_DATA(T, S, N, V) \
 typedef struct {                  \
   unsigned int tag_size;          \
-  unsigned int data_size;         \
-  unsigned int data_offset;       \
+  unsigned int content_size;      \
+  unsigned int content_offset;    \
   char start_tag[sizeof(T)];      \
-  S data;                         \
+  S content;                      \
 } N ## _t;                        \
 static N ## _t N ## _istance = {  \
   .tag_size = sizeof(T),          \
-  .data_size = sizeof(S),         \
-  .data_offset = offsetof(N ## _t, data),\
+  .content_size = sizeof(S),      \
+  .content_offset = offsetof(N ## _t, content),\
   .start_tag = T,                 \
-  .data = V,                      \
+  .content = V,                   \
 };                                \
 binject_static_t * N = (binject_static_t*) & N ## _istance
-
-binject_error_t binject_set(binject_static_t * ds, void * data, unsigned int size);
-binject_error_t binject_inject(binject_static_t * ds, const char * path);
-void * binject_data(binject_static_t * ds);
 
 // -------------------------------------------------------------------------
 // Handle custom static char array
@@ -73,16 +69,18 @@ typedef struct { \
 } N ## _inner_t; \
 BINJECT_STATIC_DATA(T, N ## _inner_t, N, {.max = S})
 
-int binject_step(binject_static_t * DS, const char * binary_path, const char * data, unsigned int r);
-int binject_done(binject_static_t * DS, const char * binary_path);
-char * binject_info(binject_static_t * DS, unsigned int * script_size, unsigned int * file_offset);
+// -------------------------------------------------------------------------
+// API functions for Read
+
+void * binject_data(binject_static_t * ds);
+char * binject_get_static_script(binject_static_t * DS, unsigned int * script_size, unsigned int * file_offset);
+int binject_get_tail_script(binject_static_t * DS, const char * self_path, char * buffer, unsigned int size, unsigned int offset);
 
 // -------------------------------------------------------------------------
+// API functions for Write
 
-// Auxilary functions for file manipulation
-
-int binject_aux_file_copy(const char * src, const char * dst);
-int binject_aux_tail_get(const char * binary_path, char * buffer, unsigned int size, unsigned int offset);
+int binject_duplicate_binary(binject_static_t * DS, const char * self_path, const char * destination_path);
+int binject_step(binject_static_t * DS, const char * destination_path, const char * data, unsigned int r);
 
 // -------------------------------------------------------------------------
 

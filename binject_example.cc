@@ -54,17 +54,18 @@ static int binject_main_app_internal_script_inject(binject_static_t * info, cons
 
   // Get the original binary size
   if (fseek(scr, 0, SEEK_END)) goto end;
-  int siz = ftell(scr);
-  if (siz < 0) goto end;
-  if (fseek(scr, 0, SEEK_SET)) goto end;
 
-  int bufsize = siz;
-  int off = 0;
   { // Scope block to avoid goto and variable length issue
+    int siz = ftell(scr);
+    if (siz < 0) goto end;
+    if (fseek(scr, 0, SEEK_SET)) goto end;
+
+    int bufsize = siz;
+    int off = 0;
     char buf[bufsize];
 
     // Copy the binary
-    result = binject_aux_file_copy(bin_path, outpath);
+    result = binject_duplicate_binary(info, bin_path, outpath);
     if (NO_ERROR != result) goto end;
 
     // Prepare the script for the injection
@@ -73,14 +74,11 @@ static int binject_main_app_internal_script_inject(binject_static_t * info, cons
       char * injdat = buf;
       injdat = aux_script_prepare(injdat, &off, &siz);
 
-      // Inject the partial script
+      // Inject the partial script and update static info into the binary
       result = binject_step(info, outpath, injdat, siz);
       if (NO_ERROR != result) goto end;
     }
   }
-
-  // Finalize by writing static info into the binary
-  result = binject_done(info, outpath);
 
 end:
   error_report(0);
@@ -93,7 +91,7 @@ static int binject_main_app_internal_script_handle(binject_static_t * info, cons
   unsigned int offset;
 
   // Get information from static section
-  char * script = binject_info(info, &size, &offset);
+  char * script = binject_get_static_script(info, &size, &offset);
 
   if (script) {
     // Script found in the static section
@@ -101,9 +99,9 @@ static int binject_main_app_internal_script_handle(binject_static_t * info, cons
 
   } else {
     // Script should be at end of the binary
-    unsigned int script_size = binject_aux_tail_get(bin_path, 0, 0, offset);
+    unsigned int script_size = binject_get_tail_script(info, bin_path, 0, 0, offset);
     char buf[script_size];
-    binject_aux_tail_get(bin_path, buf, script_size, offset);
+    binject_get_tail_script(info, bin_path, buf, script_size, offset);
     return aux_script_run(buf, script_size, argc, argv);
   }
 
@@ -116,7 +114,7 @@ int main(int argc, char **argv) {
   // Get information from static section
   unsigned int size = 0;
   unsigned int offset = 0;
-  binject_info(static_data, &size, &offset);
+  binject_get_static_script(static_data, &size, &offset);
 
   // Run the proper tool
   if (size > 0 || offset > 0) {
