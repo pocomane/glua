@@ -91,6 +91,21 @@ err:
   return ACCESS_ERROR;
 }
 
+static long int binject_read_static_data(const char * path, binject_static_t * ds){
+  FILE * file = fopen(path, "rb");
+  if (!file) return ACCESS_ERROR;
+
+  long int position = binject_find_static_data(ds, file);
+  if (0 != fseek(file, position, SEEK_SET)) {
+    fclose(file);
+    return ACCESS_ERROR;
+  }
+
+  long int result = fread(ds, 1, container_size(ds), file);
+  fclose(file);
+  return result;
+}
+
 static binject_error_t binject_inject(binject_static_t * ds, const char * path){
 
   FILE * file = fopen(path, "r+b");
@@ -165,6 +180,7 @@ int binject_duplicate_binary(binject_static_t * DS, const char * self_path, cons
   int r = 0;
   int w = 0;
   char b[128];
+  unsigned int stop = ( (binject_data_t *) binject_data(DS) ) -> tail_position;
 
   // Open files
   FILE * fs = fopen(self_path, "rb");
@@ -173,9 +189,11 @@ int binject_duplicate_binary(binject_static_t * DS, const char * self_path, cons
   if (!fd) return ACCESS_ERROR;
 
   // Copy from source file to destination
-  while (1) {
+  unsigned int tot = 0;
+  while (tot <= stop) {
     r = fread(b, 1, sizeof(b), fs);
     if (0 > r) break;
+    if (stop > 0 && tot + r > stop) r = stop - tot; // Do not copy the possible final script: it must be injected again if needed.
     w = fwrite(b, 1, r, fd);
     if (r != sizeof(b) || r != w) break;
   }
@@ -187,14 +205,29 @@ int binject_duplicate_binary(binject_static_t * DS, const char * self_path, cons
   fclose(fd);
   fclose(fs);
 
+  // Clear the static data section
+  binject_static_t *clean_static_data = (binject_static_t *) malloc(container_size(DS));
+  memcpy(clean_static_data, DS, container_size(DS));
+  binject_data_t *clean_content = (binject_data_t *)binject_data(clean_static_data);
+  clean_content->len = 0;
+  memset(clean_content->raw, 0, clean_content->max);
+  binject_inject(clean_static_data, destination_path);
+  free(clean_static_data);
+
   return NO_ERROR;
 }
 
 int binject_step(binject_static_t * DS, const char * destination_path, const char * data, unsigned int r){
-  binject_data_t * toinj = (binject_data_t *)binject_data(DS);
+
+  // Using the static data FROM the target binary
+  binject_static_t * ds = (binject_static_t *) malloc(container_size(DS));
+  memcpy(ds, DS, container_size(DS));
+  binject_read_static_data(destination_path, ds);
+
+  binject_data_t * toinj = (binject_data_t *)binject_data(ds);
   int result = NO_ERROR;
 
-  if (binject_does_use_tail(DS)) {
+  if (binject_does_use_tail(ds)) {
       // Tail mode
       result = binject_tail_append(0, destination_path, data, r);
 
@@ -207,14 +240,15 @@ int binject_step(binject_static_t * DS, const char * destination_path, const cha
 
     } else {
       // Switch to tail mode
-      binject_use_tail(DS);
-      unsigned int * pos = &(( (binject_data_t *) binject_data(DS) ) -> tail_position);
+      binject_use_tail(ds);
+      unsigned int * pos = &(( (binject_data_t *) binject_data(ds) ) -> tail_position);
       if (*pos > 0) pos = NULL;
       result = binject_tail_append(pos, destination_path, toinj->raw, toinj->len);
       if (NO_ERROR == result) result = binject_tail_append(pos, destination_path, data, r);
     }
   }
-  if (NO_ERROR == result) result = binject_inject(DS, destination_path);
+  if (NO_ERROR == result) result = binject_inject(ds, destination_path);
+  free(ds);
   return result;
 }
 
