@@ -89,6 +89,8 @@ you want or not a console to appear at start of the application).
 Build options
 --------------
 
+This library must be linked statically in the executable.
+
 If the compilation flag `USE_WHEREAMI` is enabled, the embedded `whereami`
 library will use some system dependent code to guess where the binary is.
 Otherwise it will use the first command line argument.

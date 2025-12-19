@@ -5,8 +5,6 @@
 #include "lua.h"
 #include "lauxlib.h"
 
-#include "preload.h"
-
 #define FAIL_INIT -125
 #define FAIL_ALLOC -126
 #define FAIL_EXECUTION -127
